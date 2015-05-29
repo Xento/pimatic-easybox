@@ -1,12 +1,13 @@
 {
   "name": "pimatic-easybox",
-  "description": "",
+  "description": "Detects presense of wlan devices via logging in to an easybox router. It's designed for an Easybox 904x, maybe others work, too",
   "author": "Markus Minini",
   "main": "easybox",
   "files": [
     "easybox.coffee",
     "README.md",
-    "easybox-config-schema.coffee"
+    "easybox-config-schema.coffee",
+	"device-config-schema.coffee"
   ],
   "version": "0.1.0",
   "homepage": "",
