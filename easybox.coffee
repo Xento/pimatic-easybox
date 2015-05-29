@@ -42,29 +42,50 @@ module.exports = (env) ->
       
       interval = config.interval * 1000
       
-      request = request.defaults({jar: true})
+      request = request.defaults({jar: true, followRedirect: false})
       
       updateTimer = =>        
         request.post {
           url: 'http://'+ip+'/cgi-bin/login.exe'
           form: pws: password
-        }, (err, httpResponse, body) ->
-          request.get {
-            url: 'http://'+ip+'/overview_info.js'
-          }, (err, httpResponse, body) ->
-          
-            re = /var wifi_\d = \['([^']*)', '([^']*)', '([^']*)'/g
-            m = undefined
-            devices = []
-            
-            while m = re.exec(body)
-              t = [m[1], m[2], m[3]]
-              devices.push t
-              
-            emitter.emit "update", devices
-          return
+        }, (err, httpResponse, body1) ->
         
-        setTimeout(updateTimer, config.interval) 
+          setTimeout (->
+            request.get {
+              url: 'http://'+ip+'/main_overview.stm'
+            }, (err, httpResponse, body1) ->
+            
+              setTimeout (->
+                request.get {
+                  url: 'http://'+ip+'/overview_info.js'
+                }, (err, httpResponse, body) ->
+              
+                  re = /_httoken = (\d*)/g
+                  m = undefined
+                  m1 = undefined
+                  
+                  if m1 = re.exec(body1)
+                    setTimeout (->
+                      request.post {
+                        url: 'http://'+ip+'/cgi-bin/logout.exe'
+                        form: httoken: m1[1]
+                      }
+                    ), 500
+                  
+                  re = /var wifi_\d = \['([^']*)', '([^']*)', '([^']*)'/g
+                  devices = []
+                  
+                  while m = re.exec(body)
+                    t = [m[1], m[2], m[3]]
+                    env.logger.debug "Device online: "+m[2]+" "+m[1]+" "+m[3]
+                    devices.push t
+                    
+                  emitter.emit "update", devices
+                  return
+                
+              ), 500
+          ), 500
+        setTimeout(updateTimer, interval) 
 
       updateTimer()
           
@@ -78,8 +99,6 @@ module.exports = (env) ->
       @_presence = lastState?.presence?.value or false
       
       emitter.on('update', (devices) => 
-        env.logger.debug "Device"
-        
         for device in devices
           if @config.hostname == device[2]
             @_setPresence yes
@@ -95,7 +114,7 @@ module.exports = (env) ->
             @_setPresence yes
             env.logger.debug "Discovered device " + @config.name + " over ip"
             return
-
+        env.logger.debug "Device " + @config.name + " is offline"
         @_setPresence no
       )
       
