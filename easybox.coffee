@@ -10,7 +10,8 @@ module.exports = (env) ->
   Promise = env.require 'bluebird'
   assert = env.require 'cassert'
   util = env.require 'util'
- 
+  t = env.require('decl-api').types
+  
   request = require 'request'
   #require('request').debug = true
   tough = require 'tough-cookie'
@@ -36,6 +37,15 @@ module.exports = (env) ->
         createCallback: (config, lastState) => 
           device = new EasyBoxDevicePresence(config, lastState, @deviceCount)
           @deviceCount++
+          return device
+      })
+      
+      @deviceCount2 = 0
+      @framework.deviceManager.registerDeviceClass("EasyBoxPhone", {
+        configDef: deviceConfigDef.EasyBoxPhone, 
+        createCallback: (config, lastState) => 
+          device = new EasyboxPhone(config)
+          @device2Count++
           return device
       })
       
@@ -94,7 +104,6 @@ module.exports = (env) ->
             re = /CallState\[\d\] = 0\;\nPhone\[\d*\] ='(\d*)'\;\nphonebook_name\[\d*\] ='(.*)';\nphonebook_phone_name\[\d\] ='(.*)';\n.*\n.*\n.*\nsttime\[\d\] ='(.*)';/g
             missedcalls = []
             m = undefined
-            calls = 0;
             
             while m = re.exec(body)
               call = {
@@ -103,19 +112,17 @@ module.exports = (env) ->
                 contact: m[2]
                 numbername: m[3]
               }
-              
-              env.logger.debug call
+
               missedcalls.push call
-              calls++
               
-            if CallCount != calls 
+            if CallCount != missedcalls.length && CallCount != -1
               i = 0
-              while i < calls - CallCount
-                emitter.emit 'MissedCall'
+              while i < (missedcalls.length - CallCount)
+                env.logger.debug missedcalls[i]
+                emitter.emit 'MissedCall', missedcalls[i]
                 i++
             
-            CallCount = calls
-            #emitter.emit "update", devices
+            CallCount = missedcalls.length
             return
 
       LogIn = =>
@@ -164,6 +171,69 @@ module.exports = (env) ->
       
   # Create a instance of my plugin
   plugin = new easyboxPlugin()
+
+  class EasyboxPhone extends env.devices.Sensor
+
+    constructor: (@config) ->
+      @id = config.id
+      @name = config.name
+      @attributeValue = {}
+      @attributes = {}
+      
+      attributes = [
+        {
+          name: "number"
+          type: "string"
+        },
+        {
+          name: "contact"
+          type: "string"
+        },
+        {
+          name: "numbername"
+          type: "string"
+        },
+        {
+          name: "time"
+          type: "string"
+        }
+      ]
+      
+      # initialise all attributes
+      for attr, i in attributes
+        do (attr) =>    
+
+          name = attr.name
+          assert attr.name?
+          assert attr.type?
+          
+          # that the value to 'unknown'
+          @attributeValue[name] = 'unknown'
+          # Add attribute definition
+          @attributes[name] =
+            description: name
+            type: t.string
+         
+          # Create a getter for this attribute
+          @_createGetter name, ( => Promise.resolve @attributeValue[name] )
+        
+        onCall = (call) =>
+          env.logger.debug call
+        
+          @attributeValue["number"] = call.number
+          @attributeValue["contact"] = call.contact
+          @attributeValue["numbername"] = call.numbername
+          @attributeValue["time"] = call.time
+          
+          @emit("number", call.number)
+          @emit("contact", call.contact)
+          @emit("numbername", call.numbername)
+          @emit("time", call.time)
+          emitter.emit 'MissedCallReady'
+          
+        emitter.on 'MissedCall', onCall
+        
+      super()
 
   class EasyBoxDevicePresence extends env.devices.PresenceSensor
     constructor: (@config, lastState, deviceNum) ->
@@ -221,7 +291,7 @@ module.exports = (env) ->
     constructor: (@provider) ->
 
     setup: ->
-      emitter.on('MissedCall', => 
+      emitter.on('MissedCallReady', => 
         @emit('change', 'event')
       )
       super()
