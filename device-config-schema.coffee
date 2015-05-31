@@ -20,4 +20,9 @@ module.exports = {
         default: ""
         required: false
   }
+  EasyBoxPhone: {
+    title: "Easybox config options"
+    type: "object"
+    properties: {}
+  }
 }
