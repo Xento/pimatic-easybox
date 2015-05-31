@@ -1,7 +1,7 @@
-pimatic-enigma2
+pimatic-easybox
 =======================
 
-A plugin for controlling a linux sat receiver with enigma2 or openwebif installed.
+A plugin for detecting devices and missed calls through an Easybox 904x router (maybe other work, too)
 
 
 Configuration
@@ -9,20 +9,28 @@ Configuration
 You can load the backend by editing your `config.json` to include:
 
     {
-      "plugin": "enigma2",
-      "ip": "192.168.x.x"
+      "plugin": "easybox",
+      "ip": "192.168.158.1",
+      "password": "xxx",
+      "interval": "120"
     }
 
-in the `plugins` section. For all configuration options see 
-[enigma2-config-schema](enigma2-config-schema.coffee)
+My router hangs after some time, if I lower the interval, so be careful.
 
-Currently you can send notifications to your receiver
+{
+  "id": "iPhone",
+  "name": "iPhone",
+  "class": "EasyBoxDevicePresence",
+  "hostname": "Mein iPhone"
+}
+You can detect your device via, hostname, ip or mac
+	
+in the `plugins` section. For all configuration options see 
+[device-config-schema](easybox-config-schema.coffee)
 
 Example:
 --------
 
-    if it is 08:00 tv-message message:"Good morning Dave!" [messagetype:"info"] [timeout: 30]
+if missed call then pushover xxx
 
-
-I invite everybody to contribute to this plugin.
-Here you can find the api of the webinterface http://dream.reichholf.net/e2web/.
+if devicename is present then
