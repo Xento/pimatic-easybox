@@ -11,7 +11,7 @@ module.exports = {
       type: "string"
       default: ""
       required: yes
-	interval:
+    interval:
       description: "The time in ms, for querying the router"
       type: "number"
       default: 60
