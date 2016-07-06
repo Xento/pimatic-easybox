@@ -213,22 +213,25 @@ module.exports = (env) ->
           # Create a getter for this attribute
           @_createGetter name, ( => Promise.resolve @attributeValue[name] )
         
-        onCall = (call) =>
-          env.logger.debug call
-        
-          @attributeValue["number"] = call.number
-          @attributeValue["contact"] = call.contact
-          @attributeValue["numbername"] = call.numbername
-          @attributeValue["time"] = call.time
-          
-          @emit("number", call.number)
-          @emit("contact", call.contact)
-          @emit("numbername", call.numbername)
-          @emit("time", call.time)
-          emitter.emit 'MissedCallReady'
-          
-        emitter.on 'MissedCall', onCall
-        
+      @onCall = (call) =>
+        env.logger.debug call
+
+        @attributeValue["number"] = call.number
+        @attributeValue["contact"] = call.contact
+        @attributeValue["numbername"] = call.numbername
+        @attributeValue["time"] = call.time
+
+        @emit("number", call.number)
+        @emit("contact", call.contact)
+        @emit("numbername", call.numbername)
+        @emit("time", call.time)
+        emitter.emit 'MissedCallReady'
+
+      emitter.on 'MissedCall', @onCall
+      super()
+
+    destroy: ->
+      emitter.removeListener 'MissedCall', @onCall if @onCall?
       super()
 
   class EasyBoxDevicePresence extends env.devices.PresenceSensor
@@ -236,27 +239,31 @@ module.exports = (env) ->
       @name = @config.name
       @id = @config.id
       @_presence = lastState?.presence?.value or false
-      
-      emitter.on('update', (devices) => 
+
+      @onDeviceUpdate = (devices) =>
         for device in devices
           if @config.hostname == device[2]
             @_setPresence yes
             env.logger.debug "Discovered device " + @config.name + " over hostname"
             return
-          
+
           if @config.mac == device[0]
             @_setPresence yes
             env.logger.debug "Discovered device " + @config.name + " over MAC"
             return
-          
-          if @config.ip == device[1] 
+
+          if @config.ip == device[1]
             @_setPresence yes
             env.logger.debug "Discovered device " + @config.name + " over ip"
             return
         env.logger.debug "Device " + @config.name + " is offline"
         @_setPresence no
-      )
-      
+
+      emitter.on 'update', @onDeviceUpdate
+      super()
+
+    destroy: ->
+      emitter.removeListener 'update', @onDeviceUpdate if @onDeviceUpdate?
       super()
 
     getPresence: ->
