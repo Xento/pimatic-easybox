@@ -4,12 +4,11 @@ module.exports = {
   properties: 
     password:
       description:"Password for web interface"
-      default: ""
+      type: "string"
       required: yes
     ip:
       description:"IP-Address of your router"
       type: "string"
-      default: ""
       required: yes
     interval:
       description: "The time in ms, for querying the router"
