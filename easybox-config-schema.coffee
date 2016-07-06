@@ -1,9 +1,9 @@
 module.exports = {
-  title: "enigma config options"
+  title: "easybox config options"
   type: "object"
   properties: 
     password:
-      description:"Password for webinterface"
+      description:"Password for web interface"
       default: ""
       required: yes
     ip:

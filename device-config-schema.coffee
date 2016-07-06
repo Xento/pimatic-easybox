@@ -1,4 +1,4 @@
-# #Shell device configuration options
+# #Easybox device configuration options
 module.exports = {
   title: "pimatic-easybox device config schemas"
   EasyBoxDevicePresence: {
