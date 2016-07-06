@@ -19,7 +19,7 @@
   },
   "configSchema": "easybox-config-schema.coffee",
   "dependencies": {
-    "request": "~2.55.0",
+    "request": "~2.72.0",
     "tough-cookie": "~1.2.0"
   },
   "peerDependencies": {
